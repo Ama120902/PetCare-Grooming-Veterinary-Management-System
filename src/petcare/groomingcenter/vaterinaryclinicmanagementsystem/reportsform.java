@@ -4,6 +4,8 @@
  */
 package petcare.groomingcenter.vaterinaryclinicmanagementsystem;
 
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author Ama
@@ -124,6 +126,7 @@ public class reportsform extends javax.swing.JFrame {
         jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 140, 710, 400));
 
         jButton1.setText("Print Summary");
+        jButton1.addActionListener(this::jButton1ActionPerformed);
         jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(760, 620, -1, -1));
 
         jButton2.setText("Close");
@@ -158,6 +161,37 @@ public class reportsform extends javax.swing.JFrame {
         // TODO add your handling code here:
         this.dispose();
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+        try {
+        boolean complete = jTable1.print(
+            javax.swing.JTable.PrintMode.FIT_WIDTH,
+            new java.text.MessageFormat("PetCare - Summary Report"),
+            new java.text.MessageFormat("Page {0}")
+        );
+
+        if (complete) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Summary printed successfully!"
+            );
+        } else {
+            JOptionPane.showMessageDialog(
+                this,
+                "Printing cancelled."
+            );
+        }
+
+    } catch (java.awt.print.PrinterException e) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Printing error: " + e.getMessage(),
+            "Print Error",
+            JOptionPane.ERROR_MESSAGE
+        );
+    }
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
      * @param args the command line arguments

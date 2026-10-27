@@ -4,6 +4,13 @@
  */
 package petcare.groomingcenter.vaterinaryclinicmanagementsystem;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import javax.swing.*;
+import java.awt.GridLayout;
+
+
 /**
  *
  * @author Ama
@@ -35,6 +42,127 @@ public class servicesform extends javax.swing.JFrame {
 
     TableLoader.loadTable(jTable1, sql);    
     } 
+    
+    
+private void showAddServiceForm() {
+
+    // Service name
+    JTextField serviceNameField = new JTextField();
+
+    // Category dropdown
+    JComboBox<String> categoryCombo = new JComboBox<>(
+        new String[]{
+            "Grooming",
+            "Veterinary Clinic",
+            "Boarding & Daycare",
+            "Special Treatment"
+        }
+    );
+
+    // Price
+    JTextField priceField = new JTextField();
+
+    // Duration in minutes
+    JTextField durationField = new JTextField();
+
+    // Create popup panel
+    JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
+
+    panel.add(new JLabel("Service Name:"));
+    panel.add(serviceNameField);
+
+    panel.add(new JLabel("Category:"));
+    panel.add(categoryCombo);
+
+    panel.add(new JLabel("Price (LKR):"));
+    panel.add(priceField);
+
+    panel.add(new JLabel("Duration (minutes):"));
+    panel.add(durationField);
+
+    int result = JOptionPane.showConfirmDialog(
+        this,
+        panel,
+        "Add New Service",
+        JOptionPane.OK_CANCEL_OPTION,
+        JOptionPane.PLAIN_MESSAGE
+    );
+
+    if (result != JOptionPane.OK_OPTION) {
+        return;
+    }
+
+    // Read values
+    String serviceName = serviceNameField.getText().trim();
+    String category = categoryCombo.getSelectedItem().toString();
+    String priceText = priceField.getText().trim();
+    String durationText = durationField.getText().trim();
+
+    // Validate empty fields
+    if (serviceName.isEmpty()
+            || priceText.isEmpty()
+            || durationText.isEmpty()) {
+
+        JOptionPane.showMessageDialog(
+            this,
+            "Please fill all fields."
+        );
+        return;
+    }
+
+    try {
+        double price = Double.parseDouble(priceText);
+        int duration = Integer.parseInt(durationText);
+
+        if (price <= 0 || duration <= 0) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Price and duration must be greater than zero."
+            );
+            return;
+        }
+
+        String sql =
+            "INSERT INTO services "
+            + "(service_name, category, duration_minutes, price, status) "
+            + "VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, serviceName);
+            ps.setString(2, category);
+            ps.setInt(3, duration);
+            ps.setDouble(4, price);
+            ps.setString(5, "Active");
+
+            ps.executeUpdate();
+        }
+
+        JOptionPane.showMessageDialog(
+            this,
+            "Service added successfully!"
+        );
+
+        // Reload services table
+        loadservices();
+
+    } catch (NumberFormatException e) {
+
+        JOptionPane.showMessageDialog(
+            this,
+            "Enter a valid price and duration.\n"
+            + "Example: Price = 2500, Duration = 45"
+        );
+
+    } catch (SQLException e) {
+
+        JOptionPane.showMessageDialog(
+            this,
+            "Error saving service: " + e.getMessage()
+        );
+    }
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -86,6 +214,7 @@ public class servicesform extends javax.swing.JFrame {
         jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 160, 1260, -1));
 
         jButton1.setText("+ Add Service");
+        jButton1.addActionListener(this::jButton1ActionPerformed);
         jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 640, -1, -1));
 
         jButton2.setText("Close");
@@ -111,6 +240,11 @@ public class servicesform extends javax.swing.JFrame {
         // TODO add your handling code here:
         this.dispose();
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+        showAddServiceForm();
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
      * @param args the command line arguments

@@ -40,8 +40,73 @@ public class dashboardform extends javax.swing.JFrame {
         }
         setupTableDesign();
         initDashboardInteractions();
+        loadDashboardCounts();
+        loadAppointmentsTable();
+    }
+    
+    private void loadAppointmentsTable() {
+
+    String sql =
+        "SELECT "
+        + "a.appointment_id AS `No`, "
+        + "p.pet_name AS `Pet Name`, "
+        + "s.service_name AS `Service`, "
+        + "a.appointment_datetime AS `Date & Time`, "
+        + "a.status AS `Status` "
+        + "FROM appointments a "
+        + "JOIN pets p ON a.pet_id = p.pet_id "
+        + "JOIN services s ON a.service_id = s.service_id "
+        + "ORDER BY a.appointment_datetime DESC";
+
+    TableLoader.loadTable(jTable1, sql);
+
+    setupTableDesign();
+        }
+    private void loadDashboardCounts() {
+    try (java.sql.Connection con = DBConnection.getConnection()) {
+
+        // Total Customers
+        customerCount = getTableCount(con, "customers");
+        jLabelCard1Value.setText(String.valueOf(customerCount));
+
+        // Total Pets
+        petCount = getTableCount(con, "pets");
+        jLabelCard2Value.setText(String.valueOf(petCount));
+
+        // Total Appointments
+        appointmentCount = getTableCount(con, "appointments");
+        jLabelCard3Value.setText(String.valueOf(appointmentCount));
+
+        // Total Services
+        serviceCount = getTableCount(con, "services");
+        jLabelCard4Value.setText(String.valueOf(serviceCount));
+
+    } catch (java.sql.SQLException e) {
+        javax.swing.JOptionPane.showMessageDialog(
+            this,
+            "Unable to load dashboard counts.\n" + e.getMessage(),
+            "Database Error",
+            javax.swing.JOptionPane.ERROR_MESSAGE
+        );
+    }
+}
+
+private int getTableCount(
+        java.sql.Connection con, String tableName)
+        throws java.sql.SQLException {
+
+    String sql = "SELECT COUNT(*) FROM " + tableName;
+
+    try (java.sql.Statement stmt = con.createStatement();
+         java.sql.ResultSet rs = stmt.executeQuery(sql)) {
+
+        if (rs.next()) {
+            return rs.getInt(1);
+        }
     }
 
+    return 0;
+}
     /**
      * Creates new form dashboardform
      */
@@ -58,11 +123,11 @@ public class dashboardform extends javax.swing.JFrame {
         jTable1.setRowHeight(40);
 
         // Column widths
-        jTable1.getColumnModel().getColumn(0).setPreferredWidth(40);
-        jTable1.getColumnModel().getColumn(1).setPreferredWidth(100);
-        jTable1.getColumnModel().getColumn(2).setPreferredWidth(120);
-        jTable1.getColumnModel().getColumn(3).setPreferredWidth(150);
-        jTable1.getColumnModel().getColumn(4).setPreferredWidth(100);
+        jTable1.getColumnModel().getColumn(0).setPreferredWidth(50);
+        jTable1.getColumnModel().getColumn(1).setPreferredWidth(130);
+        jTable1.getColumnModel().getColumn(2).setPreferredWidth(150);
+        jTable1.getColumnModel().getColumn(3).setPreferredWidth(180);
+        jTable1.getColumnModel().getColumn(4).setPreferredWidth(110);
 
         // Center align the "No" column
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -396,7 +461,7 @@ public class dashboardform extends javax.swing.JFrame {
 
         jLabelCard3Title.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         jLabelCard3Title.setForeground(new java.awt.Color(124, 58, 237));
-        jLabelCard3Title.setText("Today's Appointments");
+        jLabelCard3Title.setText("Total Appointments");
         jPanel6.add(jLabelCard3Title, new org.netbeans.lib.awtextra.AbsoluteConstraints(75, 20, 155, 20));
 
         jLabelCard3Value.setFont(new java.awt.Font("Segoe UI", 1, 30)); // NOI18N
@@ -615,31 +680,43 @@ public class dashboardform extends javax.swing.JFrame {
         jLabelCard1Link.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                showCustomersAndPetsDialog();
+                customerpetsform form = new customerpetsform(currentUser);
+                form.setLocationRelativeTo(null);
+                form.setVisible(true);
+                dispose();
             }
         });
         jLabelCard2Link.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                showCustomersAndPetsDialog();
+                customerpetsform form = new customerpetsform(currentUser);
+                form.setLocationRelativeTo(null);
+                form.setVisible(true);
+                dispose();
             }
         });
         jLabelCard3Link.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                showAppointmentsDialog();
+                appointmentsform appointments = new appointmentsform();
+                appointments.setVisible(true);
+                dispose();
             }
         });
         jLabelCard4Link.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                showServicesDialog();
+                servicesform services = new servicesform();
+                services.setVisible(true);
+                dispose();
             }
         });
         jLabelAppViewAll.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                showAppointmentsDialog();
+                appointmentsform appointments = new appointmentsform();
+                appointments.setVisible(true);
+                dispose();
             }
         });
 

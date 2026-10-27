@@ -4,6 +4,9 @@
  */
 package petcare.groomingcenter.vaterinaryclinicmanagementsystem;
 
+import javax.swing.JTextField;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author Ama
@@ -39,10 +42,25 @@ public class customerpetsform extends javax.swing.JFrame {
         "FROM customers c " +
         "LEFT JOIN pets p " +
         "ON c.customer_id = p.customer_id " +
-        "ORDER BY c.customer_id DESC";
+        "ORDER BY c.customer_id ASC";
 
     TableLoader.loadTable(jTable1, sql);
     }
+    
+    private static class CustomerItem {
+    int id;
+    String name;
+
+    CustomerItem(int id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -111,12 +129,15 @@ public class customerpetsform extends javax.swing.JFrame {
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 30, 1260, 90));
 
         jButton3.setText("+ Add Customer");
+        jButton3.addActionListener(this::jButton3ActionPerformed);
         jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 640, 130, -1));
 
         jButton4.setText("+ Register Pet");
+        jButton4.addActionListener(this::jButton4ActionPerformed);
         jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 640, 130, -1));
 
         jButton5.setText("Delete Selected");
+        jButton5.addActionListener(this::jButton5ActionPerformed);
         jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 640, 130, -1));
 
         jButton6.setText("Close");
@@ -133,6 +154,272 @@ public class customerpetsform extends javax.swing.JFrame {
         new dashboardform(currentUser).setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+        // TODO add your handling code here:
+        JTextField nameField = new JTextField();
+    JTextField phoneField = new JTextField();
+
+    Object[] fields = {
+        "Customer Name:", nameField,
+        "Phone Number:", phoneField
+    };
+
+    int result = JOptionPane.showConfirmDialog(
+        this,
+        fields,
+        "Add New Customer",
+        JOptionPane.OK_CANCEL_OPTION,
+        JOptionPane.PLAIN_MESSAGE
+    );
+
+    if (result == JOptionPane.OK_OPTION) {
+        String name = nameField.getText().trim();
+        String phone = phoneField.getText().trim();
+
+        if (name.isEmpty() || phone.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                this, "Please enter customer name and phone number."
+            );
+            return;
+        }
+
+        if (!phone.matches("[0-9+\\- ]{7,15}")) {
+            JOptionPane.showMessageDialog(
+                this, "Please enter a valid phone number."
+            );
+            return;
+        }
+
+        String sql = "INSERT INTO customers (customer_name, phone) VALUES (?, ?)";
+
+        try (java.sql.Connection con = DBConnection.getConnection();
+             java.sql.PreparedStatement pst = con.prepareStatement(sql)) {
+
+            pst.setString(1, name);
+            pst.setString(2, phone);
+
+            pst.executeUpdate();
+
+            JOptionPane.showMessageDialog(
+                this, "Customer added successfully!"
+            );
+
+        loadCustomersPets();
+
+        } catch (java.sql.SQLException e) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Error saving customer: " + e.getMessage()
+            );
+        }
+    }
+    }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        // TODO add your handling code here:
+        JTextField petNameField = new JTextField();
+    JTextField breedField = new JTextField();
+    JTextField ageField = new JTextField();
+
+    javax.swing.JComboBox<String> speciesCombo =
+        new javax.swing.JComboBox<>(
+            new String[]{"Dog", "Cat", "Bird", "Rabbit", "Other"}
+        );
+
+    javax.swing.JComboBox<CustomerItem> customerCombo =
+        new javax.swing.JComboBox<>();
+
+    // Load customers into the dropdown
+    try (java.sql.Connection con = DBConnection.getConnection();
+         java.sql.PreparedStatement pst = con.prepareStatement(
+             "SELECT customer_id, customer_name FROM customers ORDER BY customer_name"
+         );
+         java.sql.ResultSet rs = pst.executeQuery()) {
+
+        while (rs.next()) {
+            customerCombo.addItem(
+                new CustomerItem(
+                    rs.getInt("customer_id"),
+                    rs.getString("customer_name")
+                )
+            );
+        }
+
+    } catch (java.sql.SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Unable to load customers: " + e.getMessage()
+        );
+        return;
+    }
+
+    if (customerCombo.getItemCount() == 0) {
+        JOptionPane.showMessageDialog(
+            this, "Please add a customer before registering a pet."
+        );
+        return;
+    }
+
+    Object[] fields = {
+        "Pet Name:", petNameField,
+        "Species / Animal:", speciesCombo,
+        "Breed:", breedField,
+        "Age (years):", ageField,
+        "Customer / Owner:", customerCombo
+    };
+
+    int result = JOptionPane.showConfirmDialog(
+        this,
+        fields,
+        "Register New Pet",
+        JOptionPane.OK_CANCEL_OPTION,
+        JOptionPane.PLAIN_MESSAGE
+    );
+
+    if (result != JOptionPane.OK_OPTION) {
+        return;
+    }
+
+    String petName = petNameField.getText().trim();
+    String species = (String) speciesCombo.getSelectedItem();
+    String breed = breedField.getText().trim();
+    String ageText = ageField.getText().trim();
+    CustomerItem customer =
+        (CustomerItem) customerCombo.getSelectedItem();
+
+    if (petName.isEmpty() || breed.isEmpty() || ageText.isEmpty()) {
+        JOptionPane.showMessageDialog(
+            this, "Please fill in pet name, breed and age."
+        );
+        return;
+    }
+
+    int age;
+
+    try {
+        age = Integer.parseInt(ageText);
+
+        if (age < 0 || age > 100) {
+            JOptionPane.showMessageDialog(
+                this, "Please enter a valid age between 0 and 100."
+            );
+            return;
+        }
+
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(
+            this, "Age must be a whole number."
+        );
+        return;
+    }
+
+    String sql = "INSERT INTO pets "
+        + "(customer_id, pet_name, species, breed, age) "
+        + "VALUES (?, ?, ?, ?, ?)";
+
+    try (java.sql.Connection con = DBConnection.getConnection();
+         java.sql.PreparedStatement pst = con.prepareStatement(sql)) {
+
+        pst.setInt(1, customer.id);
+        pst.setString(2, petName);
+        pst.setString(3, species);
+        pst.setString(4, breed);
+        pst.setInt(5, age);
+
+        pst.executeUpdate();
+
+        JOptionPane.showMessageDialog(
+            this, "Pet registered successfully!"
+        );
+
+        loadCustomersPets();
+
+    } catch (java.sql.SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error registering pet: " + e.getMessage()
+        );
+    }
+    }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        // TODO add your handling code here:
+        int selectedRow = jTable1.getSelectedRow();
+
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Please select a customer row to delete."
+        );
+        return;
+    }
+
+    int modelRow = jTable1.convertRowIndexToModel(selectedRow);
+
+    int customerId = Integer.parseInt(
+        jTable1.getModel().getValueAt(modelRow, 0).toString()
+    );
+
+    int confirm = JOptionPane.showConfirmDialog(
+        this,
+        "Are you sure you want to delete Customer ID " + customerId
+            + " and the associated pets?",
+        "Confirm Delete",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.WARNING_MESSAGE
+    );
+
+    if (confirm != JOptionPane.YES_OPTION) {
+        return;
+    }
+
+    String deletePets = "DELETE FROM pets WHERE customer_id = ?";
+    String deleteCustomer = "DELETE FROM customers WHERE customer_id = ?";
+
+    try (java.sql.Connection con = DBConnection.getConnection()) {
+
+        con.setAutoCommit(false);
+
+        try (
+            java.sql.PreparedStatement petStmt =
+                con.prepareStatement(deletePets);
+            java.sql.PreparedStatement customerStmt =
+                con.prepareStatement(deleteCustomer)
+        ) {
+            petStmt.setInt(1, customerId);
+            petStmt.executeUpdate();
+
+            customerStmt.setInt(1, customerId);
+            int deleted = customerStmt.executeUpdate();
+
+            if (deleted == 0) {
+                con.rollback();
+                JOptionPane.showMessageDialog(
+                    this, "Customer not found."
+                );
+                return;
+            }
+
+            con.commit();
+
+            JOptionPane.showMessageDialog(
+                this, "Customer and associated pets deleted successfully!"
+            );
+
+            loadCustomersPets();
+
+        } catch (java.sql.SQLException e) {
+            con.rollback();
+            throw e;
+        } finally {
+            con.setAutoCommit(true);
+        }
+
+    } catch (java.sql.SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error deleting customer: " + e.getMessage()
+        );
+    }
+    }//GEN-LAST:event_jButton5ActionPerformed
 
     /**
      * @param args the command line arguments

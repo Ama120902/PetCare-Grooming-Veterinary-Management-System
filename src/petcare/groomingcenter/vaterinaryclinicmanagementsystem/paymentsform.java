@@ -4,6 +4,16 @@
  */
 package petcare.groomingcenter.vaterinaryclinicmanagementsystem;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import javax.swing.*;
+import java.awt.GridLayout;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  *
  * @author Ama
@@ -41,6 +51,217 @@ public class paymentsform extends javax.swing.JFrame {
 
     TableLoader.loadTable(jTable1, sql);  
     }
+
+private void showRecordPaymentForm() {
+
+    JTextField invoiceField = new JTextField();
+    JTextField customerNameField = new JTextField();
+    JTextField petNameField = new JTextField();
+    JTextField amountField = new JTextField();
+
+    customerNameField.setEditable(false);
+    petNameField.setEditable(false);
+
+    JComboBox<String> appointmentCombo = new JComboBox<>();
+
+    Map<String, Integer> appointmentIds = new LinkedHashMap<>();
+    Map<String, String> customerNames = new LinkedHashMap<>();
+    Map<String, String> petNames = new LinkedHashMap<>();
+
+    JComboBox<String> methodCombo = new JComboBox<>(
+        new String[]{"Cash", "Card", "Bank Transfer"}
+    );
+
+    JComboBox<String> statusCombo = new JComboBox<>(
+        new String[]{"Paid", "Pending"}
+    );
+
+    JTextField dateField = new JTextField(LocalDate.now().toString());
+
+    // Load appointment, customer and pet details
+    String appointmentSQL =
+        "SELECT a.appointment_id, a.appointment_datetime, " +
+        "c.customer_name, p.pet_name " +
+        "FROM appointments a " +
+        "JOIN customers c ON a.customer_id = c.customer_id " +
+        "JOIN pets p ON a.pet_id = p.pet_id " +
+        "ORDER BY a.appointment_id DESC";
+
+    try (Connection con = DBConnection.getConnection();
+         PreparedStatement ps = con.prepareStatement(appointmentSQL);
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+
+            String id = String.valueOf(rs.getInt("appointment_id"));
+            String dateTime = rs.getString("appointment_datetime");
+
+            String display = id + " - " + dateTime;
+
+            appointmentCombo.addItem(display);
+            appointmentIds.put(display, Integer.parseInt(id));
+
+            customerNames.put(id, rs.getString("customer_name"));
+            petNames.put(id, rs.getString("pet_name"));
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Error loading appointment details: " + e.getMessage()
+        );
+        return;
+    }
+
+    if (appointmentCombo.getItemCount() == 0) {
+        JOptionPane.showMessageDialog(
+            this,
+            "No appointments found. Please add an appointment first."
+        );
+        return;
+    }
+
+    // Automatically display customer and pet names
+    Runnable updateDetails = () -> {
+        String selected = (String) appointmentCombo.getSelectedItem();
+
+        if (selected != null) {
+            String id = selected.split(" - ", 2)[0];
+
+            customerNameField.setText(
+                customerNames.getOrDefault(id, "")
+            );
+
+            petNameField.setText(
+                petNames.getOrDefault(id, "")
+            );
+        }
+    };
+
+    appointmentCombo.addActionListener(e -> updateDetails.run());
+    updateDetails.run();
+
+    // Popup layout
+    JPanel panel = new JPanel(new GridLayout(8, 2, 10, 10));
+
+    panel.add(new JLabel("Invoice Number:"));
+    panel.add(invoiceField);
+
+    panel.add(new JLabel("Appointment Number:"));
+    panel.add(appointmentCombo);
+
+    panel.add(new JLabel("Customer Name:"));
+    panel.add(customerNameField);
+
+    panel.add(new JLabel("Pet Name:"));
+    panel.add(petNameField);
+
+    panel.add(new JLabel("Amount (LKR):"));
+    panel.add(amountField);
+
+    panel.add(new JLabel("Payment Method:"));
+    panel.add(methodCombo);
+
+    panel.add(new JLabel("Status:"));
+    panel.add(statusCombo);
+
+    panel.add(new JLabel("Payment Date (YYYY-MM-DD):"));
+    panel.add(dateField);
+
+    int result = JOptionPane.showConfirmDialog(
+        this,
+        panel,
+        "Record Payment",
+        JOptionPane.OK_CANCEL_OPTION,
+        JOptionPane.PLAIN_MESSAGE
+    );
+
+    if (result != JOptionPane.OK_OPTION) {
+        return;
+    }
+
+    String invoiceNumber = invoiceField.getText().trim();
+    String amountText = amountField.getText().trim();
+    String paymentDate = dateField.getText().trim();
+
+    if (invoiceNumber.isEmpty()
+            || amountText.isEmpty()
+            || paymentDate.isEmpty()) {
+
+        JOptionPane.showMessageDialog(this, "Please fill all fields.");
+        return;
+    }
+
+    try {
+        double amount = Double.parseDouble(amountText);
+
+        if (amount <= 0) {
+            JOptionPane.showMessageDialog(
+                this, "Amount must be greater than zero."
+            );
+            return;
+        }
+
+        LocalDate.parse(paymentDate);
+
+        String selectedAppointment =
+            (String) appointmentCombo.getSelectedItem();
+
+        Integer appointmentId = appointmentIds.get(selectedAppointment);
+
+        if (appointmentId == null) {
+            JOptionPane.showMessageDialog(
+                this, "Please select an appointment."
+            );
+            return;
+        }
+
+        String paymentMethod = (String) methodCombo.getSelectedItem();
+        String status = (String) statusCombo.getSelectedItem();
+
+        String insertSQL =
+            "INSERT INTO payments " +
+            "(invoice_number, appointment_id, amount, " +
+            "payment_method, status, payment_date) " +
+            "VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(insertSQL)) {
+
+            ps.setString(1, invoiceNumber);
+            ps.setInt(2, appointmentId);
+            ps.setDouble(3, amount);
+            ps.setString(4, paymentMethod);
+            ps.setString(5, status);
+            ps.setDate(6, java.sql.Date.valueOf(paymentDate));
+
+            ps.executeUpdate();
+        }
+
+        JOptionPane.showMessageDialog(
+            this, "Payment recorded successfully!"
+        );
+
+        loadpayments();
+
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(
+            this, "Please enter a valid amount. Example: 2500"
+        );
+
+    } catch (java.time.format.DateTimeParseException e) {
+        JOptionPane.showMessageDialog(
+            this, "Invalid date. Use YYYY-MM-DD format."
+        );
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error recording payment: " + e.getMessage()
+        );
+    }
+}
+
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -90,6 +311,7 @@ public class paymentsform extends javax.swing.JFrame {
         jPanel2.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 140, 1300, -1));
 
         jButton1.setText("+ Record Payment");
+        jButton1.addActionListener(this::jButton1ActionPerformed);
         jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 600, -1, -1));
 
         jButton2.setText("Close");
@@ -124,6 +346,11 @@ public class paymentsform extends javax.swing.JFrame {
         // TODO add your handling code here:
         this.dispose();
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+        showRecordPaymentForm();
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
      * @param args the command line arguments
