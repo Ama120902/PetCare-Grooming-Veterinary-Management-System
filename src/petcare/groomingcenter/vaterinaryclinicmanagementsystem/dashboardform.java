@@ -213,6 +213,11 @@ public class dashboardform extends javax.swing.JFrame {
         jButton2.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jButton2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jButton2.setIconTextGap(14);
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
         jPanel2.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 180, 240, 42));
 
         jButton3.setBackground(new java.awt.Color(22, 55, 97));
@@ -570,15 +575,25 @@ public class dashboardform extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton2ActionPerformed
+
     private void initDashboardInteractions() {
         // Navigation sidebar buttons
         jButton1.addActionListener(e -> onDashboardClick());
-        jButton2.addActionListener(e -> showCustomersAndPetsDialog());
-        jButton3.addActionListener(e -> showAppointmentsDialog());
-        jButton4.addActionListener(e -> showServicesDialog());
-        jButton5.addActionListener(e -> showPaymentsDialog());
-        jButton6.addActionListener(e -> showReportsDialog());
-        jButton7.addActionListener(e -> showSettingsDialog());
+        jButton2.addActionListener(e -> {new customerpetsform(currentUser).setVisible(true);
+        this.dispose();});
+        jButton3.addActionListener(e -> {new appointmentsform().setVisible(true);
+        this.dispose();});
+        jButton4.addActionListener(e -> {new servicesform().setVisible(true);
+        this.dispose();});
+        jButton5.addActionListener(e -> {new paymentsform().setVisible(true);
+        this.dispose();});
+        jButton6.addActionListener(e -> {new reportsform().setVisible(true);
+        this.dispose();});
+        jButton7.addActionListener(e -> {new settingsform().setVisible(true);
+        this.dispose();});
         jButton8.addActionListener(e -> performLogout());
 
         // Quick action buttons on right panel
