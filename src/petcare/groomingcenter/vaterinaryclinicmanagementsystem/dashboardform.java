@@ -188,7 +188,6 @@ private int getTableCount(
         jButton4 = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
-        jButton7 = new javax.swing.JButton();
         jButton8 = new javax.swing.JButton();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
@@ -324,16 +323,6 @@ private int getTableCount(
         jButton6.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jButton6.setIconTextGap(14);
         jPanel2.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 380, 240, 42));
-
-        jButton7.setBackground(new java.awt.Color(22, 55, 97));
-        jButton7.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
-        jButton7.setForeground(new java.awt.Color(203, 213, 225));
-        jButton7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/petcare/groomingcenter/vaterinaryclinicmanagementsystem/resources/icons8-settings-24.png"))); // NOI18N
-        jButton7.setText("Settings");
-        jButton7.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        jButton7.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jButton7.setIconTextGap(14);
-        jPanel2.add(jButton7, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 430, 240, 42));
 
         jButton8.setBackground(new java.awt.Color(22, 55, 97));
         jButton8.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
@@ -657,8 +646,7 @@ private int getTableCount(
         this.dispose();});
         jButton6.addActionListener(e -> {new reportsform().setVisible(true);
         this.dispose();});
-        jButton7.addActionListener(e -> {new settingsform().setVisible(true);
-        this.dispose();});
+        
         jButton8.addActionListener(e -> performLogout());
 
         // Quick action buttons on right panel
@@ -1362,7 +1350,6 @@ private int getTableCount(
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
-    private javax.swing.JButton jButton7;
     private javax.swing.JButton jButton8;
     private javax.swing.JButton jButton9;
     private javax.swing.JLabel jLabel1;
