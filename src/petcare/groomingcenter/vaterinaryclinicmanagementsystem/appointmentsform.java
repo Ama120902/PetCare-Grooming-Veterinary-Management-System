@@ -10,7 +10,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import javax.swing.JComboBox;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
@@ -18,6 +17,18 @@ import javax.swing.JButton;
 import java.awt.GridLayout;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerDateModel;
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+import javax.swing.JOptionPane;
+import java.util.HashMap;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.view.JasperViewer;
 /**
  *
  * @author Ama
@@ -65,12 +76,33 @@ public class appointmentsform extends javax.swing.JFrame {
     JComboBox<String> serviceCombo = new JComboBox<>();
     Map<String, Integer> serviceIds = new LinkedHashMap<>();
 
-    // Date and time fields
-    JTextField dateField = new JTextField(
-            java.time.LocalDate.now().toString()
-    );
+    // Date selector
+        JSpinner dateSpinner = new JSpinner(
+        new SpinnerDateModel(
+                new Date(),
+                null,
+                null,
+                Calendar.DAY_OF_MONTH
+        )
+        );
 
-    JTextField timeField = new JTextField("10:00");
+        dateSpinner.setEditor(
+        new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd")
+        );
+
+    // Time selector
+        JSpinner timeSpinner = new JSpinner(
+        new SpinnerDateModel(
+                new Date(),
+                null,
+                null,
+                Calendar.MINUTE
+        )
+        );
+
+timeSpinner.setEditor(
+        new JSpinner.DateEditor(timeSpinner, "HH:mm")
+        );
 
     // Status dropdown
     JComboBox<String> statusCombo = new JComboBox<>(
@@ -209,12 +241,11 @@ public class appointmentsform extends javax.swing.JFrame {
     panel.add(new JLabel("Service:"));
     panel.add(serviceCombo);
 
-    panel.add(new JLabel("Date (YYYY-MM-DD):"));
-    panel.add(dateField);
+    panel.add(new JLabel("Appointment Date:"));
+    panel.add(dateSpinner);
 
-    panel.add(new JLabel("Time (HH:MM):"));
-    panel.add(timeField);
-
+    panel.add(new JLabel("Appointment Time:"));
+    panel.add(timeSpinner);
     panel.add(new JLabel("Status:"));
     panel.add(statusCombo);
 
@@ -259,16 +290,24 @@ public class appointmentsform extends javax.swing.JFrame {
         int petId = petIds.get(selectedPet);
         int serviceId = serviceIds.get(selectedService);
 
-        // Validate date and time
+         SimpleDateFormat dateFormat =
+        new SimpleDateFormat("yyyy-MM-dd");
+
+        SimpleDateFormat timeFormat =
+        new SimpleDateFormat("HH:mm");
+
+        String selectedDate = dateFormat.format(
+        (Date) dateSpinner.getValue()
+            );
+
+        String selectedTime = timeFormat.format(
+        (Date) timeSpinner.getValue()
+            );
+
         LocalDateTime dateTime = LocalDateTime.parse(
-                dateField.getText().trim()
-                + "T"
-                + timeField.getText().trim()
-        );
-
-        String status =
-                statusCombo.getSelectedItem().toString();
-
+        selectedDate + "T" + selectedTime
+            );
+        String status = statusCombo.getSelectedItem().toString();
         // Insert appointment
         String insertSQL =
                 "INSERT INTO appointments "
@@ -347,6 +386,7 @@ public class appointmentsform extends javax.swing.JFrame {
         jButton4 = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
+        jButton7 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -383,27 +423,31 @@ public class appointmentsform extends javax.swing.JFrame {
 
         jButton1.setText("+ New Appointment");
         jButton1.addActionListener(this::jButton1ActionPerformed);
-        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 220, -1, -1));
+        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 220, 190, -1));
 
         jButton2.setText("Mark Confirmed");
         jButton2.addActionListener(this::jButton2ActionPerformed);
-        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 300, 140, -1));
+        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 280, 190, -1));
 
         jButton3.setText("Mark Completed");
         jButton3.addActionListener(this::jButton3ActionPerformed);
-        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 370, 140, -1));
+        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 390, 190, -1));
 
         jButton4.setText("Cancel Appointment");
         jButton4.addActionListener(this::jButton4ActionPerformed);
-        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 450, -1, -1));
+        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 450, 190, -1));
 
         jButton5.setText("Close");
         jButton5.addActionListener(this::jButton5ActionPerformed);
-        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 520, 140, -1));
+        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 520, 190, -1));
 
         jButton6.setText("Dashboard");
         jButton6.addActionListener(this::jButton6ActionPerformed);
-        jPanel1.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 600, 140, -1));
+        jPanel1.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 590, 190, -1));
+
+        jButton7.setText("View Appointment Report");
+        jButton7.addActionListener(this::jButton7ActionPerformed);
+        jPanel1.add(jButton7, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 330, 190, -1));
 
         getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1350, 700));
 
@@ -596,6 +640,50 @@ public class appointmentsform extends javax.swing.JFrame {
     }
     }//GEN-LAST:event_jButton4ActionPerformed
 
+    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+        // TODO add your handling code here:
+    try {
+        Connection con = DBConnection.getConnection();
+
+        java.io.InputStream reportStream =
+             getClass().getResourceAsStream(
+            "PetCareAppointmentReport.jrxml"
+        );
+
+        if (reportStream == null) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Report file not found!"
+            );
+            return;
+        }
+
+    JasperReport report =
+        JasperCompileManager.compileReport(reportStream);
+
+    JasperPrint print =
+        JasperFillManager.fillReport(
+            report,
+            new HashMap<String, Object>(),
+            con
+        );
+
+    JasperViewer viewer = new JasperViewer(print, false);
+    viewer.setTitle("PetCare Appointment Report");
+    viewer.setVisible(true);
+
+    reportStream.close();
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Report Error: " + e.getMessage()
+    );
+    e.printStackTrace();
+    }
+
+    }//GEN-LAST:event_jButton7ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -628,6 +716,7 @@ public class appointmentsform extends javax.swing.JFrame {
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
+    private javax.swing.JButton jButton7;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;

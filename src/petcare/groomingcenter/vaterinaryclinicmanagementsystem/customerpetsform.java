@@ -6,6 +6,9 @@ package petcare.groomingcenter.vaterinaryclinicmanagementsystem;
 
 import javax.swing.JTextField;
 import javax.swing.JOptionPane;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
  *
@@ -32,17 +35,18 @@ public class customerpetsform extends javax.swing.JFrame {
     private void loadCustomersPets() 
     {
 
-    String sql =
-        "SELECT c.customer_id AS ID, " +
-        "c.customer_name AS `Customer Name`, " +
-        "c.phone AS Phone, " +
-        "p.pet_name AS `Pet Name`, " +
-        "p.species AS Species, " +
-        "p.breed AS Breed " +
-        "FROM customers c " +
-        "LEFT JOIN pets p " +
-        "ON c.customer_id = p.customer_id " +
-        "ORDER BY c.customer_id ASC";
+   String sql =
+    "SELECT c.customer_id AS ID, " +
+    "c.customer_name AS `Customer Name`, " +
+    "c.phone AS Phone, " +
+    "p.pet_id AS `Pet ID`, " +
+    "p.pet_name AS `Pet Name`, " +
+    "p.species AS Species, " +
+    "p.breed AS Breed " +
+    "FROM customers c " +
+    "LEFT JOIN pets p " +
+    "ON c.customer_id = p.customer_id " +
+    "ORDER BY c.customer_id ASC";
 
     TableLoader.loadTable(jTable1, sql);
     }
@@ -82,6 +86,7 @@ public class customerpetsform extends javax.swing.JFrame {
         jButton4 = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
+        jButton7 = new javax.swing.JButton();
 
         jButton2.setText("jButton2");
 
@@ -98,7 +103,7 @@ public class customerpetsform extends javax.swing.JFrame {
         jButton1.setMaximumSize(new java.awt.Dimension(2147483647, 2147483647));
         jButton1.setMinimumSize(new java.awt.Dimension(1310, 730));
         jButton1.addActionListener(this::jButton1ActionPerformed);
-        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 640, 130, -1));
+        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 640, 130, -1));
 
         jTable1.setBackground(new java.awt.Color(204, 204, 204));
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
@@ -130,18 +135,22 @@ public class customerpetsform extends javax.swing.JFrame {
 
         jButton3.setText("+ Add Customer");
         jButton3.addActionListener(this::jButton3ActionPerformed);
-        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 640, 130, -1));
+        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 640, 130, -1));
 
         jButton4.setText("+ Register Pet");
         jButton4.addActionListener(this::jButton4ActionPerformed);
-        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 640, 130, -1));
+        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(470, 640, 130, -1));
 
         jButton5.setText("Delete Selected");
         jButton5.addActionListener(this::jButton5ActionPerformed);
-        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 640, 130, -1));
+        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(880, 640, 130, -1));
 
         jButton6.setText("Close");
-        jPanel1.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(1020, 640, 130, -1));
+        jPanel1.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(1070, 640, 130, -1));
+
+        jButton7.setText("Edit Selected");
+        jButton7.addActionListener(this::jButton7ActionPerformed);
+        jPanel1.add(jButton7, new org.netbeans.lib.awtextra.AbsoluteConstraints(670, 640, 140, -1));
 
         getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1260, 720));
         jPanel1.getAccessibleContext().setAccessibleDescription("");
@@ -421,6 +430,183 @@ public class customerpetsform extends javax.swing.JFrame {
     }
     }//GEN-LAST:event_jButton5ActionPerformed
 
+    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+        // TODO add your handling code here:
+         int selectedRow = jTable1.getSelectedRow();
+
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(
+            this, "Please select a row to edit."
+        );
+        return;
+    }
+
+    int row = jTable1.convertRowIndexToModel(selectedRow);
+
+    int customerId = Integer.parseInt(
+        jTable1.getModel().getValueAt(row, 0).toString()
+    );
+
+    String oldName = jTable1.getModel()
+        .getValueAt(row, 1).toString();
+
+    String oldPhone = jTable1.getModel()
+        .getValueAt(row, 2).toString();
+
+    Object petIdValue = jTable1.getModel().getValueAt(row, 3);
+
+    JTextField nameField = new JTextField(oldName);
+    JTextField phoneField = new JTextField(oldPhone);
+
+    JTextField petNameField = new JTextField();
+    javax.swing.JComboBox<String> speciesCombo =
+        new javax.swing.JComboBox<>(
+            new String[]{"Dog", "Cat", "Bird", "Rabbit", "Other"}
+        );
+    JTextField breedField = new JTextField();
+
+    boolean hasPet = petIdValue != null
+        && !petIdValue.toString().trim().isEmpty()
+        && !petIdValue.toString().equalsIgnoreCase("null");
+
+    int petId = -1;
+
+    if (hasPet) {
+        petId = Integer.parseInt(petIdValue.toString());
+
+        petNameField.setText(
+            jTable1.getModel().getValueAt(row, 4).toString()
+        );
+
+        speciesCombo.setSelectedItem(
+            jTable1.getModel().getValueAt(row, 5).toString()
+        );
+
+        breedField.setText(
+            jTable1.getModel().getValueAt(row, 6).toString()
+        );
+    }
+
+    java.util.List<Object> fields = new java.util.ArrayList<>();
+
+    fields.add("Customer Name:");
+    fields.add(nameField);
+    fields.add("Phone:");
+    fields.add(phoneField);
+
+    if (hasPet) {
+        fields.add("Pet Name:");
+        fields.add(petNameField);
+        fields.add("Species:");
+        fields.add(speciesCombo);
+        fields.add("Breed:");
+        fields.add(breedField);
+    }
+
+    int result = JOptionPane.showConfirmDialog(
+        this,
+        fields.toArray(),
+        "Edit Customer and Pet Details",
+        JOptionPane.OK_CANCEL_OPTION,
+        JOptionPane.PLAIN_MESSAGE
+    );
+
+    if (result != JOptionPane.OK_OPTION) {
+        return;
+    }
+
+    String name = nameField.getText().trim();
+    String phone = phoneField.getText().trim();
+
+    if (name.isEmpty() || phone.isEmpty()) {
+        JOptionPane.showMessageDialog(
+            this, "Customer name and phone are required."
+        );
+        return;
+    }
+
+    if (!phone.matches("[0-9+\\- ]{7,15}")) {
+        JOptionPane.showMessageDialog(
+            this, "Please enter a valid phone number."
+        );
+        return;
+    }
+
+    try (Connection con = DBConnection.getConnection()) {
+
+        con.setAutoCommit(false);
+
+        try {
+            String customerSQL =
+                "UPDATE customers SET customer_name = ?, phone = ? "
+                + "WHERE customer_id = ?";
+
+            try (PreparedStatement ps =
+                     con.prepareStatement(customerSQL)) {
+
+                ps.setString(1, name);
+                ps.setString(2, phone);
+                ps.setInt(3, customerId);
+                ps.executeUpdate();
+            }
+
+            if (hasPet) {
+                String petName = petNameField.getText().trim();
+                String species =
+                    (String) speciesCombo.getSelectedItem();
+                String breed = breedField.getText().trim();
+
+                if (petName.isEmpty() || breed.isEmpty()) {
+                    throw new SQLException(
+                        "Pet name and breed are required."
+                    );
+                }
+
+                String petSQL =
+                    "UPDATE pets SET pet_name = ?, species = ?, breed = ? "
+                    + "WHERE pet_id = ? AND customer_id = ?";
+
+                try (PreparedStatement ps =
+                         con.prepareStatement(petSQL)) {
+
+                    ps.setString(1, petName);
+                    ps.setString(2, species);
+                    ps.setString(3, breed);
+                    ps.setInt(4, petId);
+                    ps.setInt(5, customerId);
+
+                    int updated = ps.executeUpdate();
+
+                    if (updated == 0) {
+                        throw new SQLException(
+                            "Pet record was not found."
+                        );
+                    }
+                }
+            }
+
+            con.commit();
+
+            JOptionPane.showMessageDialog(
+                this, "Details updated successfully!"
+            );
+
+            loadCustomersPets();
+
+        } catch (SQLException e) {
+            con.rollback();
+            throw e;
+        } finally {
+            con.setAutoCommit(true);
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error updating details: " + e.getMessage()
+        );
+    }
+    }//GEN-LAST:event_jButton7ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -453,6 +639,7 @@ public class customerpetsform extends javax.swing.JFrame {
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
+    private javax.swing.JButton jButton7;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;

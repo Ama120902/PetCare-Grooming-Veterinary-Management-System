@@ -5,7 +5,6 @@
 package petcare.groomingcenter.vaterinaryclinicmanagementsystem;
 
 import javax.swing.JOptionPane;
-import net.sf.jasperreports.engine.JasperDesign;
 
 /**
  *
@@ -92,7 +91,6 @@ public class reportsform extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(1340, 720));
@@ -138,10 +136,6 @@ public class reportsform extends javax.swing.JFrame {
         jButton3.setText("Dashboard");
         jButton3.addActionListener(this::jButton3ActionPerformed);
         jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(1060, 620, 120, -1));
-
-        jButton4.setText("Print Jasper Report");
-        jButton4.addActionListener(this::jButton4ActionPerformed);
-        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(610, 620, 140, -1));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -199,53 +193,6 @@ public class reportsform extends javax.swing.JFrame {
     }
     }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        // TODO add your handling code here:
-         try {
-        java.io.InputStream reportStream =
-            getClass().getResourceAsStream(
-                "/petcare/groomingcenter/vaterinaryclinicmanagementsystem/reports/PetCareAppointmentReport.jrxml"
-            );
-
-        if (reportStream == null) {
-            javax.swing.JOptionPane.showMessageDialog(
-                this, "Jasper Report file not found!"
-            );
-            return;
-        }
-
-        JasperDesign design =
-            net.sf.jasperreports.engine.xml.JRXmlLoader.load(reportStream);
-
-        net.sf.jasperreports.engine.JasperReport report =
-            net.sf.jasperreports.engine.JasperCompileManager.compileReport(design);
-
-        java.sql.Connection con = DBConnection.getConnection();
-
-        net.sf.jasperreports.engine.JasperPrint print =
-            net.sf.jasperreports.engine.JasperFillManager.fillReport(
-                report, new java.util.HashMap<>(), con
-            );
-
-        reportStream.close();
-
-        net.sf.jasperreports.view.JasperViewer viewer =
-            new net.sf.jasperreports.view.JasperViewer(print, false);
-
-        viewer.setTitle("PetCare Appointment Report");
-        viewer.setVisible(true);
-
-    } catch (Exception e) {
-        javax.swing.JOptionPane.showMessageDialog(
-            this,
-            "Report Error: " + e.getMessage(),
-            "Error",
-            javax.swing.JOptionPane.ERROR_MESSAGE
-        );
-        e.printStackTrace();
-    }
-    }//GEN-LAST:event_jButton4ActionPerformed
-
     /**
      * @param args the command line arguments
      */
@@ -275,7 +222,6 @@ public class reportsform extends javax.swing.JFrame {
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
