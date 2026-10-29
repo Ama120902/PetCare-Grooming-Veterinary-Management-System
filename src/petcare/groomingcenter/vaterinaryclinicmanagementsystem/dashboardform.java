@@ -370,7 +370,7 @@ private int getTableCount(
         jLabelAdmin.setForeground(new java.awt.Color(30, 41, 59));
         jLabelAdmin.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         jLabelAdmin.setIcon(new javax.swing.ImageIcon(getClass().getResource("/petcare/groomingcenter/vaterinaryclinicmanagementsystem/resources/badge_admin.png"))); // NOI18N
-        jLabelAdmin.setText("Admin ⌄");
+        jLabelAdmin.setText("Admin ");
         jLabelAdmin.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jLabelAdmin.setIconTextGap(8);
         jPanel1.add(jLabelAdmin, new org.netbeans.lib.awtextra.AbsoluteConstraints(1160, 15, 150, 35));
@@ -649,13 +649,44 @@ private int getTableCount(
         
         jButton8.addActionListener(e -> performLogout());
 
-        // Quick action buttons on right panel
-        jButton9.addActionListener(e -> showNewAppointmentDialog());
-        jButton10.addActionListener(e -> showRegisterPetDialog());
-        jButton11.addActionListener(e -> showAddCustomerDialog());
-        jButton12.addActionListener(e -> showAddServiceDialog());
-        jButton13.addActionListener(e -> showReportsDialog());
+        // Quick Action: New Customer
+        jButton9.addActionListener(e -> {
+            customerpetsform form = new customerpetsform(currentUser);
+            form.setLocationRelativeTo(null);
+            form.setVisible(true);
+            this.dispose();
+        });
 
+        // Quick Action: New Pet
+        jButton10.addActionListener(e -> {
+            customerpetsform form = new customerpetsform(currentUser);
+            form.setLocationRelativeTo(null);
+            form.setVisible(true);
+            this.dispose();
+        });
+
+        // Quick Action: Book Appointment
+        jButton11.addActionListener(e -> {appointmentsform form = new appointmentsform();
+            form.setLocationRelativeTo(null);
+            form.setVisible(true);
+            this.dispose();
+            });
+
+        // Quick Action: Add Service
+        jButton12.addActionListener(e -> {
+        servicesform form = new servicesform();
+        form.setLocationRelativeTo(null);
+        form.setVisible(true);
+        this.dispose();
+        });
+
+        // Quick Action: View Reports
+        jButton13.addActionListener(e -> {
+        reportsform form = new reportsform();
+        form.setLocationRelativeTo(null);
+        form.setVisible(true);
+        this.dispose();
+        });
         // Admin Profile in Header
         jLabelAdmin.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
