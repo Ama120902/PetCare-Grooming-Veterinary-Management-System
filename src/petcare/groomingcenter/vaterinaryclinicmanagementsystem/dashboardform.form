@@ -419,7 +419,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/petcare/groomingcenter/vaterinaryclinicmanagementsystem/resources/badge_admin.png"/>
             </Property>
-            <Property name="text" type="java.lang.String" value="Admin &#x2304;"/>
+            <Property name="text" type="java.lang.String" value="Admin "/>
             <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
               <Color id="Hand Cursor"/>
             </Property>
