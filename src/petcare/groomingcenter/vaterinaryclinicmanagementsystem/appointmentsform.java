@@ -365,6 +365,332 @@ timeSpinner.setEditor(
         );
     }
 }
+    
+    private void editSelectedAppointment() {
+
+    int selectedRow = jTable1.getSelectedRow();
+
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(
+            this, "Please select an appointment first."
+        );
+        return;
+    }
+
+    int appointmentId = Integer.parseInt(
+        jTable1.getValueAt(
+            selectedRow, 0
+        ).toString()
+    );
+
+    JComboBox<String> customerCombo = new JComboBox<>();
+    JComboBox<String> petCombo = new JComboBox<>();
+    JComboBox<String> serviceCombo = new JComboBox<>();
+
+    Map<String, Integer> customerIds = new LinkedHashMap<>();
+    Map<String, Integer> petIds = new LinkedHashMap<>();
+    Map<String, Integer> serviceIds = new LinkedHashMap<>();
+
+    JSpinner dateSpinner = new JSpinner(
+        new SpinnerDateModel(
+            new Date(), null, null, Calendar.DAY_OF_MONTH
+        )
+    );
+    dateSpinner.setEditor(
+        new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd")
+    );
+
+    JSpinner timeSpinner = new JSpinner(
+        new SpinnerDateModel(
+            new Date(), null, null, Calendar.MINUTE
+        )
+    );
+    timeSpinner.setEditor(
+        new JSpinner.DateEditor(timeSpinner, "HH:mm")
+    );
+
+    JComboBox<String> statusCombo = new JComboBox<>(
+        new String[]{
+            "Pending", "Confirmed", "Completed", "Cancelled"
+        }
+    );
+
+    int oldCustomerId;
+    int oldPetId;
+    int oldServiceId;
+    String oldStatus;
+    Date oldDateTime;
+
+    // 1. Load existing appointment details
+    String appointmentSQL =
+        "SELECT customer_id, pet_id, service_id, " +
+        "appointment_datetime, status " +
+        "FROM appointments WHERE appointment_id = ?";
+
+    try (Connection con = DBConnection.getConnection();
+         PreparedStatement ps =
+             con.prepareStatement(appointmentSQL)) {
+
+        ps.setInt(1, appointmentId);
+
+        try (ResultSet rs = ps.executeQuery()) {
+
+            if (!rs.next()) {
+                JOptionPane.showMessageDialog(
+                    this, "Appointment not found."
+                );
+                return;
+            }
+
+            oldCustomerId = rs.getInt("customer_id");
+            oldPetId = rs.getInt("pet_id");
+            oldServiceId = rs.getInt("service_id");
+            oldStatus = rs.getString("status");
+            oldDateTime = rs.getTimestamp(
+                "appointment_datetime"
+            );
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error loading appointment: " + e.getMessage()
+        );
+        return;
+    }
+
+    // 2. Load customers
+    String customerSQL =
+        "SELECT customer_id, customer_name " +
+        "FROM customers ORDER BY customer_name";
+
+    try (Connection con = DBConnection.getConnection();
+         PreparedStatement ps = con.prepareStatement(customerSQL);
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+            String name = rs.getString("customer_name");
+            int id = rs.getInt("customer_id");
+
+            customerCombo.addItem(name);
+            customerIds.put(name, id);
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error loading customers: " + e.getMessage()
+        );
+        return;
+    }
+
+    // 3. Load pets
+    String petSQL =
+        "SELECT pet_id, pet_name FROM pets ORDER BY pet_name";
+
+    try (Connection con = DBConnection.getConnection();
+         PreparedStatement ps = con.prepareStatement(petSQL);
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+            String name = rs.getString("pet_name");
+            int id = rs.getInt("pet_id");
+
+            petCombo.addItem(name);
+            petIds.put(name, id);
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error loading pets: " + e.getMessage()
+        );
+        return;
+    }
+
+    // 4. Load services
+    String serviceSQL =
+        "SELECT service_id, service_name " +
+        "FROM services ORDER BY service_name";
+
+    try (Connection con = DBConnection.getConnection();
+         PreparedStatement ps = con.prepareStatement(serviceSQL);
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+            String name = rs.getString("service_name");
+            int id = rs.getInt("service_id");
+
+            serviceCombo.addItem(name);
+            serviceIds.put(name, id);
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error loading services: " + e.getMessage()
+        );
+        return;
+    }
+
+    // Check whether required records are available
+    if (customerCombo.getItemCount() == 0 ||
+        petCombo.getItemCount() == 0 ||
+        serviceCombo.getItemCount() == 0) {
+
+        JOptionPane.showMessageDialog(
+            this, "Required customer, pet or service data is missing."
+        );
+        return;
+    }
+
+    // 5. Select the existing values
+    customerCombo.setSelectedItem(
+        findNameById(customerIds, oldCustomerId)
+    );
+
+    petCombo.setSelectedItem(
+        findNameById(petIds, oldPetId)
+    );
+
+    serviceCombo.setSelectedItem(
+        findNameById(serviceIds, oldServiceId)
+    );
+
+    if (oldDateTime != null) {
+        dateSpinner.setValue(oldDateTime);
+        timeSpinner.setValue(oldDateTime);
+    }
+
+    statusCombo.setSelectedItem(oldStatus);
+
+    // 6. Create the edit dialog
+    JPanel panel = new JPanel(new GridLayout(6, 2, 10, 10));
+
+    panel.add(new JLabel("Customer Name:"));
+    panel.add(customerCombo);
+
+    panel.add(new JLabel("Pet Name:"));
+    panel.add(petCombo);
+
+    panel.add(new JLabel("Service:"));
+    panel.add(serviceCombo);
+
+    panel.add(new JLabel("Appointment Date:"));
+    panel.add(dateSpinner);
+
+    panel.add(new JLabel("Appointment Time:"));
+    panel.add(timeSpinner);
+
+    panel.add(new JLabel("Status:"));
+    panel.add(statusCombo);
+
+    int result = JOptionPane.showConfirmDialog(
+        this,
+        panel,
+        "Edit Appointment - No. " + appointmentId,
+        JOptionPane.OK_CANCEL_OPTION,
+        JOptionPane.PLAIN_MESSAGE
+    );
+
+    if (result != JOptionPane.OK_OPTION) {
+        return;
+    }
+
+    // 7. Validate selections
+    String customer = (String) customerCombo.getSelectedItem();
+    String pet = (String) petCombo.getSelectedItem();
+    String service = (String) serviceCombo.getSelectedItem();
+
+    if (customer == null || pet == null || service == null) {
+        JOptionPane.showMessageDialog(
+            this, "Please select all required details."
+        );
+        return;
+    }
+
+    // 8. Update the appointment
+    try {
+        int customerId = customerIds.get(customer);
+        int petId = petIds.get(pet);
+        int serviceId = serviceIds.get(service);
+
+        SimpleDateFormat dateFormat =
+            new SimpleDateFormat("yyyy-MM-dd");
+
+        SimpleDateFormat timeFormat =
+            new SimpleDateFormat("HH:mm");
+
+        String selectedDate = dateFormat.format(
+            (Date) dateSpinner.getValue()
+        );
+
+        String selectedTime = timeFormat.format(
+            (Date) timeSpinner.getValue()
+        );
+
+        LocalDateTime dateTime = LocalDateTime.parse(
+            selectedDate + "T" + selectedTime
+        );
+
+        String status = statusCombo.getSelectedItem().toString();
+
+        String updateSQL =
+            "UPDATE appointments SET customer_id = ?, " +
+            "pet_id = ?, service_id = ?, " +
+            "appointment_datetime = ?, status = ? " +
+            "WHERE appointment_id = ?";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps =
+                 con.prepareStatement(updateSQL)) {
+
+            ps.setInt(1, customerId);
+            ps.setInt(2, petId);
+            ps.setInt(3, serviceId);
+
+            ps.setTimestamp(
+                4, java.sql.Timestamp.valueOf(dateTime)
+            );
+
+            ps.setString(5, status);
+            ps.setInt(6, appointmentId);
+
+            int updated = ps.executeUpdate();
+
+            if (updated > 0) {
+                JOptionPane.showMessageDialog(
+                    this, "Appointment updated successfully!"
+                );
+
+                loadappointments();
+            } else {
+                JOptionPane.showMessageDialog(
+                    this, "Appointment could not be updated."
+                );
+            }
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(
+            this, "Error updating appointment: " + e.getMessage()
+        );
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(
+            this, "Please check the selected details: "
+                + e.getMessage()
+        );
+    }
+}
+
+// Find the name belonging to a database ID
+private String findNameById(
+        Map<String, Integer> items, int id) {
+
+    for (Map.Entry<String, Integer> entry : items.entrySet()) {
+        if (entry.getValue() == id) {
+            return entry.getKey();
+        }
+    }
+
+    return null;
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -387,6 +713,7 @@ timeSpinner.setEditor(
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
         jButton7 = new javax.swing.JButton();
+        jButton8 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -431,15 +758,15 @@ timeSpinner.setEditor(
 
         jButton3.setText("Mark Completed");
         jButton3.addActionListener(this::jButton3ActionPerformed);
-        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 390, 190, -1));
+        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 320, 190, -1));
 
         jButton4.setText("Cancel Appointment");
         jButton4.addActionListener(this::jButton4ActionPerformed);
-        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 450, 190, -1));
+        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 370, 190, -1));
 
         jButton5.setText("Close");
         jButton5.addActionListener(this::jButton5ActionPerformed);
-        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 520, 190, -1));
+        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 540, 190, -1));
 
         jButton6.setText("Dashboard");
         jButton6.addActionListener(this::jButton6ActionPerformed);
@@ -447,7 +774,11 @@ timeSpinner.setEditor(
 
         jButton7.setText("View Appointment Report");
         jButton7.addActionListener(this::jButton7ActionPerformed);
-        jPanel1.add(jButton7, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 330, 190, -1));
+        jPanel1.add(jButton7, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 480, 190, -1));
+
+        jButton8.setText("Edit Appointment");
+        jButton8.addActionListener(this::jButton8ActionPerformed);
+        jPanel1.add(jButton8, new org.netbeans.lib.awtextra.AbsoluteConstraints(1100, 420, 190, 30));
 
         getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1350, 700));
 
@@ -684,6 +1015,11 @@ timeSpinner.setEditor(
 
     }//GEN-LAST:event_jButton7ActionPerformed
 
+    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
+        // TODO add your handling code here:
+         editSelectedAppointment();
+    }//GEN-LAST:event_jButton8ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -717,6 +1053,7 @@ timeSpinner.setEditor(
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton7;
+    private javax.swing.JButton jButton8;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
