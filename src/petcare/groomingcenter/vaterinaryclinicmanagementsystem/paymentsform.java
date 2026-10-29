@@ -13,6 +13,8 @@ import javax.swing.*;
 import java.awt.GridLayout;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  *
@@ -54,19 +56,17 @@ public class paymentsform extends javax.swing.JFrame {
 
 private void showRecordPaymentForm() {
 
-    JTextField invoiceField = new JTextField();
-    JTextField customerNameField = new JTextField();
-    JTextField petNameField = new JTextField();
-    JTextField amountField = new JTextField();
+            JTextField invoiceField = new JTextField(
+        "INV-" + LocalDateTime.now().format(
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+        )
+    );
+    invoiceField.setEditable(false);
 
-    customerNameField.setEditable(false);
-    petNameField.setEditable(false);
-
+    JComboBox<String> customerCombo = new JComboBox<>();
+    JComboBox<String> petCombo = new JComboBox<>();
     JComboBox<String> appointmentCombo = new JComboBox<>();
-
-    Map<String, Integer> appointmentIds = new LinkedHashMap<>();
-    Map<String, String> customerNames = new LinkedHashMap<>();
-    Map<String, String> petNames = new LinkedHashMap<>();
+    JComboBox<String> amountCombo = new JComboBox<>();
 
     JComboBox<String> methodCombo = new JComboBox<>(
         new String[]{"Cash", "Card", "Bank Transfer"}
@@ -78,86 +78,220 @@ private void showRecordPaymentForm() {
 
     JTextField dateField = new JTextField(LocalDate.now().toString());
 
-    // Load appointment, customer and pet details
-    String appointmentSQL =
-        "SELECT a.appointment_id, a.appointment_datetime, " +
-        "c.customer_name, p.pet_name " +
-        "FROM appointments a " +
-        "JOIN customers c ON a.customer_id = c.customer_id " +
-        "JOIN pets p ON a.pet_id = p.pet_id " +
-        "ORDER BY a.appointment_id DESC";
+    Map<String, Integer> customerIds = new LinkedHashMap<>();
+    Map<String, Integer> petIds = new LinkedHashMap<>();
+    Map<String, Integer> appointmentIds = new LinkedHashMap<>();
+    Map<String, Double> appointmentPrices = new LinkedHashMap<>();
+
+    // 1. Load customers from the database
+    String customerSQL =
+        "SELECT customer_id, customer_name " +
+        "FROM customers ORDER BY customer_name";
 
     try (Connection con = DBConnection.getConnection();
-         PreparedStatement ps = con.prepareStatement(appointmentSQL);
+         PreparedStatement ps = con.prepareStatement(customerSQL);
          ResultSet rs = ps.executeQuery()) {
 
         while (rs.next()) {
+            int id = rs.getInt("customer_id");
+            String name = rs.getString("customer_name");
 
-            String id = String.valueOf(rs.getInt("appointment_id"));
-            String dateTime = rs.getString("appointment_datetime");
+            String display = id + " - " + name;
 
-            String display = id + " - " + dateTime;
-
-            appointmentCombo.addItem(display);
-            appointmentIds.put(display, Integer.parseInt(id));
-
-            customerNames.put(id, rs.getString("customer_name"));
-            petNames.put(id, rs.getString("pet_name"));
+            customerCombo.addItem(display);
+            customerIds.put(display, id);
         }
 
     } catch (SQLException e) {
         JOptionPane.showMessageDialog(
-            this,
-            "Error loading appointment details: " + e.getMessage()
+            this, "Error loading customers: " + e.getMessage()
         );
         return;
     }
 
-    if (appointmentCombo.getItemCount() == 0) {
+    if (customerCombo.getItemCount() == 0) {
         JOptionPane.showMessageDialog(
-            this,
-            "No appointments found. Please add an appointment first."
+            this, "No customers found. Please register a customer first."
         );
         return;
     }
 
-    // Automatically display customer and pet names
-    Runnable updateDetails = () -> {
-        String selected = (String) appointmentCombo.getSelectedItem();
+    // 2. Load pets belonging to the selected customer
+    Runnable loadPets = () -> {
+        petCombo.removeAllItems();
+        petIds.clear();
 
-        if (selected != null) {
-            String id = selected.split(" - ", 2)[0];
+        appointmentCombo.removeAllItems();
+        appointmentIds.clear();
+        appointmentPrices.clear();
+        amountCombo.removeAllItems();
 
-            customerNameField.setText(
-                customerNames.getOrDefault(id, "")
-            );
+        String selectedCustomer =
+            (String) customerCombo.getSelectedItem();
 
-            petNameField.setText(
-                petNames.getOrDefault(id, "")
+        Integer customerId = customerIds.get(selectedCustomer);
+
+        if (customerId == null) {
+            return;
+        }
+
+        String petSQL =
+            "SELECT pet_id, pet_name FROM pets " +
+            "WHERE customer_id = ? ORDER BY pet_name";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(petSQL)) {
+
+            ps.setInt(1, customerId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int petId = rs.getInt("pet_id");
+                    String petName = rs.getString("pet_name");
+
+                    String display = petId + " - " + petName;
+
+                    petCombo.addItem(display);
+                    petIds.put(display, petId);
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                this, "Error loading pets: " + e.getMessage()
             );
         }
     };
 
-    appointmentCombo.addActionListener(e -> updateDetails.run());
-    updateDetails.run();
+    // 3. Load appointments and actual service prices
+    Runnable loadAppointments = () -> {
+        appointmentCombo.removeAllItems();
+        appointmentIds.clear();
+        appointmentPrices.clear();
+        amountCombo.removeAllItems();
 
-    // Popup layout
+        String selectedCustomer =
+            (String) customerCombo.getSelectedItem();
+
+        String selectedPet =
+            (String) petCombo.getSelectedItem();
+
+        Integer customerId = customerIds.get(selectedCustomer);
+        Integer petId = petIds.get(selectedPet);
+
+        if (customerId == null || petId == null) {
+            return;
+        }
+
+        String appointmentSQL =
+                "SELECT a.appointment_id, a.appointment_datetime, " +
+                "a.customer_id, a.pet_id, s.service_name, s.price " +
+                "FROM appointments a " +
+                "INNER JOIN services s ON a.service_id = s.service_id " +
+                "WHERE a.customer_id = ? AND a.pet_id = ? " +
+                "ORDER BY a.appointment_id DESC";
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps =
+                 con.prepareStatement(appointmentSQL)) {
+
+            ps.setInt(1, customerId);
+            ps.setInt(2, petId);
+            
+            System.out.println(
+                         "Selected customer ID: " + customerId);
+            System.out.println(
+                           "Selected pet ID: " + petId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int appointmentId =
+                        rs.getInt("appointment_id");
+
+                    String dateTime =
+                        rs.getString("appointment_datetime");
+
+                    String serviceName =
+                        rs.getString("service_name");
+
+                    double price = rs.getDouble("price");
+
+                    String display =
+                        "Appointment #" + appointmentId +
+                        " | " + dateTime +
+                        " | " + serviceName;
+
+                    appointmentCombo.addItem(display);
+                    appointmentIds.put(display, appointmentId);
+                    appointmentPrices.put(display, price);
+                    
+                    System.out.println(
+                            "Appointment found: " + rs.getInt("appointment_id"));
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                this, "Error loading appointments: " + e.getMessage()
+            );
+        }
+
+        // Display the actual service price for the selected appointment
+        String selectedAppointment =
+            (String) appointmentCombo.getSelectedItem();
+
+        Double price = appointmentPrices.get(selectedAppointment);
+
+        if (price != null) {
+            amountCombo.addItem(
+                "LKR " + String.format("%.2f", price)
+            );
+        }
+    };
+
+   // Update dropdowns when selections change
+    customerCombo.addActionListener(e -> {
+        loadPets.run();
+    });
+
+    petCombo.addActionListener(e -> {
+        loadAppointments.run();
+    });
+
+    appointmentCombo.addActionListener(e -> {
+    amountCombo.removeAllItems();
+
+    String selectedAppointment =
+        (String) appointmentCombo.getSelectedItem();
+
+    Double price = appointmentPrices.get(selectedAppointment);
+
+    if (price != null) {
+        amountCombo.addItem(
+            "LKR " + String.format("%.2f", price)
+        );
+    }
+});
+
+    // Load the first customer's pets and related appointments
+    loadPets.run();
+
     JPanel panel = new JPanel(new GridLayout(8, 2, 10, 10));
 
     panel.add(new JLabel("Invoice Number:"));
     panel.add(invoiceField);
 
-    panel.add(new JLabel("Appointment Number:"));
-    panel.add(appointmentCombo);
-
     panel.add(new JLabel("Customer Name:"));
-    panel.add(customerNameField);
+    panel.add(customerCombo);
 
     panel.add(new JLabel("Pet Name:"));
-    panel.add(petNameField);
+    panel.add(petCombo);
+
+    panel.add(new JLabel("Appointment:"));
+    panel.add(appointmentCombo);
 
     panel.add(new JLabel("Amount (LKR):"));
-    panel.add(amountField);
+    panel.add(amountCombo);
 
     panel.add(new JLabel("Payment Method:"));
     panel.add(methodCombo);
@@ -180,42 +314,26 @@ private void showRecordPaymentForm() {
         return;
     }
 
-    String invoiceNumber = invoiceField.getText().trim();
-    String amountText = amountField.getText().trim();
     String paymentDate = dateField.getText().trim();
 
-    if (invoiceNumber.isEmpty()
-            || amountText.isEmpty()
-            || paymentDate.isEmpty()) {
+    String selectedAppointment =
+        (String) appointmentCombo.getSelectedItem();
 
-        JOptionPane.showMessageDialog(this, "Please fill all fields.");
+    Integer appointmentId = appointmentIds.get(selectedAppointment);
+    Double amount = appointmentPrices.get(selectedAppointment);
+
+    if (appointmentId == null || amount == null) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Please select a customer, pet and valid appointment."
+        );
         return;
     }
 
     try {
-        double amount = Double.parseDouble(amountText);
-
-        if (amount <= 0) {
-            JOptionPane.showMessageDialog(
-                this, "Amount must be greater than zero."
-            );
-            return;
-        }
-
         LocalDate.parse(paymentDate);
 
-        String selectedAppointment =
-            (String) appointmentCombo.getSelectedItem();
-
-        Integer appointmentId = appointmentIds.get(selectedAppointment);
-
-        if (appointmentId == null) {
-            JOptionPane.showMessageDialog(
-                this, "Please select an appointment."
-            );
-            return;
-        }
-
+        String invoiceNumber = invoiceField.getText().trim();
         String paymentMethod = (String) methodCombo.getSelectedItem();
         String status = (String) statusCombo.getSelectedItem();
 
@@ -226,7 +344,8 @@ private void showRecordPaymentForm() {
             "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(insertSQL)) {
+             PreparedStatement ps =
+                 con.prepareStatement(insertSQL)) {
 
             ps.setString(1, invoiceNumber);
             ps.setInt(2, appointmentId);
@@ -243,11 +362,6 @@ private void showRecordPaymentForm() {
         );
 
         loadpayments();
-
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(
-            this, "Please enter a valid amount. Example: 2500"
-        );
 
     } catch (java.time.format.DateTimeParseException e) {
         JOptionPane.showMessageDialog(
